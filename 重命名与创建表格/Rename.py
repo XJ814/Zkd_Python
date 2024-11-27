@@ -4,6 +4,7 @@ import sys
 import io
 from PyPDF2 import PdfReader
 import pandas as pd
+import re
 
 # 设置标准输出为 UTF-8 编码
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -28,8 +29,8 @@ def extract_title_from_pdf(pdf_path):
             font_size = word['bottom'] - word['top']  # 字体大小通常可以通过top差值来估计
             # print(f'font_size:{font_size}')
             # 调整条件
-            if 170 > top > 100 and font_size > 20:  # 增加top的阈值，减小font_size的要求
-              possible_titles.append((text, top))
+            if 500 > top > 400 and font_size > 19:  # 增加top的阈值，减小font_size的要求
+                possible_titles.append((text, top))
         
         # 调试输出
         # print(f"提取的文本及其坐标: {possible_titles}")
@@ -37,9 +38,17 @@ def extract_title_from_pdf(pdf_path):
         # 按照 top 值（Y坐标）排序，通常标题在页面的顶部
         possible_titles = sorted(possible_titles, key=lambda x: x[1])
         if possible_titles:
-            # 假设第一个文本是标题
+            # 拼接文本作为标题
             title = "".join([text.replace(" ", "") for text, _ in possible_titles]).strip()
-            return title
+            # print(f"文件 {pdf_file} 的标题为 {title}")
+            
+            # 使用正则表达式匹配 "关于" 开头，"批复" 结尾的部分
+            match = re.search(r"关于.*批复", title)
+            if match:
+                title = match.group(0)  # 提取匹配的部分作为文件名
+                return title
+            else:
+                return None
         else:
             return None
 
